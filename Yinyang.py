@@ -6,33 +6,29 @@ Created on Tue Jan  3 13:40:13 2017
 """
 
 import numpy as np
-from k_means_auxiliary import dist, infinite_number
-Inf = infinite_number()
+from k_means_auxiliary import dist, Inf, compute_new_clasters
+from sub_func import make_groups
 
 def yinyang_k_means(data, k):
-    assert k % 10 == 0
     n, d = data.shape
-    m = int(k/10)
+    m = int(np.ceil(k/10))
     clasters = data[:k].copy()
-    new_clasters = np.zeros((k,d))
-    old_best = np.zeros(n, int)
+    old_best = np.ones(n, int) * k  #nasty trick (see compute_new_clusters)
     best = np.zeros(n, int)
+#    parents = np.array([int(c/10) for c in range(k)])
+#    children = [[10 * i + j for j in range(10)] for i in range(m)]
+    children, parents = make_groups(clasters, m);
+    m = len(children)
     ub = np.ones(n)
     dc = np.zeros(k)
     dG = np.zeros(m)
     lb = np.zeros(n)
     lbG = np.zeros((n,m))
-    parents = np.zeros(k,int)
-    children = np.zeros((m,10),int)
     claster_sizes = np.zeros(k, int)
-    new_claster_sizes = np.zeros(k, int)
-    
-    for c in range(k):
-        parents[c] = int(c/10)
-        children[int(c/10), c % 10] = c
 
     stop = False
     it_num = 0
+    dist.count = 0
     while not stop:  
         it_num += 1
         
@@ -52,7 +48,8 @@ def yinyang_k_means(data, k):
                                         dist_x_c = dist(data[x], clasters[c])
                                         if second[1] > dist_x_c:
                                             if first[1] > dist_x_c:
-                                                second = first
+                                                if parents[first[0]] == G:
+                                                    second = first
                                                 first = (c, dist_x_c)
                                             second = (c, dist_x_c)
                             if first[0] != best[x]:
@@ -72,32 +69,18 @@ def yinyang_k_means(data, k):
         
 
         #center update step
-        stop = True
-        new_claster_sizes = np.zeros(k, int)
-        for x in range(n):
-            if old_best[x] != best[x]:
-                stop = False
-            new_claster_sizes[best[x]] += 1
-        for c in range(k):
-            if new_claster_sizes[c] > 0:
-                new_clasters[c] = clasters[c] * claster_sizes[c]
-            else:
-                new_clasters[c] = clasters[c]
-                dc[c] = 0
-        for x in range(n):
-            if old_best[x] != best[x]:
-                new_clasters[best[x]] += data[x]
-                if new_claster_sizes[old_best[x]] > 0:
-                    new_clasters[old_best[x]] -= data[x]
-        for c in range(k):
-            if new_claster_sizes[c] > 0:
-                new_clasters[c] /= new_claster_sizes[c]
-                dc[c] = dist(new_clasters[c], clasters[c])
-
-        clasters, new_clasters = new_clasters, clasters
+        new_clasters, claster_sizes = \
+            compute_new_clasters(data, clasters ,old_best, best, claster_sizes)
+        if np.all(best == old_best):
+            stop = True
         old_best = best.copy()
-        claster_sizes = new_claster_sizes
         
+        for c in range(k):
+            if claster_sizes[c] == 0:
+                dc[c] = 0
+            else:
+                dc[c] = dist(clasters[c], new_clasters[c])
+        clasters = new_clasters
         for G in range(m):
             dG[G] = max([dc[c] for c in children[G]])
         delta = max(dG)
@@ -105,7 +88,7 @@ def yinyang_k_means(data, k):
             ub[x] += dc[best[x]]
             lb[x] -= delta     
 
-    print(it_num)
+    print("yinyang   : iter = %i, dist. calcs = %i, " % (it_num, dist.count), end = "")
     return (clasters, best)
 
 

@@ -7,42 +7,45 @@ Created on Tue Jan  3 13:40:13 2017
 
 import numpy as np
 from numpy import newaxis
-from k_means_auxiliary import dist, infinite_number
-Inf = infinite_number()
+from copy import deepcopy
+from k_means_auxiliary import dist, Inf, compute_new_clasters
+from sub_func import make_groups
 
 def my_k_means(data, k):
-    assert k % 10 == 0
     n, d = data.shape
-    m = int(k/10)
-    clasters = data[:k].copy()[newaxis,]
-    new_clasters = np.zeros((k,d))
-    old_best = np.zeros(n, int)
+    m = int(np.ceil(k/10))
+    clasters = [data[:k].copy()]
+    old_best = np.ones(n, int) * k  #nasty trick (see compute_new_clusters)
     best = np.zeros(n, int)
+#    parents = np.array([int(c/10) for c in range(k)])
+#    children = [[[10 * i + j for j in range(10)] for i in range(m)]]
+    children, parents = make_groups(clasters[0], m);
+    m = len(children)
+    children = [children]
     ub = np.ones(n)
     dc = np.zeros(k)[newaxis,] #смещения кластеров
     dG = np.zeros(m)[newaxis,] #смещения групп
     dmax = np.array([0])       #максимальные смещения кластеров с момента s
     lb = np.zeros(n)
     lbG = np.zeros((n,m))
+    lbc = np.zeros((n,k))
     sb = np.zeros(n, int)      #момент точности ub
     sG = np.zeros((n,m), int)  #момент точности lbG(x,G)
+    sc = np.zeros((n,k), int)  #момент точности lbc(x,c)
     sA = np.zeros(n, int)      #момент измерения lb
-    parents = np.zeros(k,int)
-    children = np.zeros((m,10),int)
     claster_sizes = np.zeros(k, int)
-    new_claster_sizes = np.zeros(k, int)
     
-    for c in range(k):
-        parents[c] = int(c/10)
-        children[int(c/10), c % 10] = c
-
     stop = False
     t = 0
+    dist.count = 0
+    
     while not stop:
         #assignment step
         for x in range(n):
             if ub[x] + dc[sb[x], best[x]] > lb[x] - dmax[sA[x]]:
-                ub[x] = dist(data[x], clasters[t, best[x]])
+                ub[x] = dist(data[x], clasters[t][best[x]])
+                lbc[x, best[x]] = ub[x]
+                sc[x, best[x]] = t
                 sb[x] = t
                 if ub[x] > lb[x] - dmax[sA[x]]:
                     sA[x] = t
@@ -51,13 +54,20 @@ def my_k_means(data, k):
                             #update lbG
                             first = (best[x], ub[x])
                             second = (-1, Inf)
-                            for c in children[G]:
+                            for c in children[sG[x,G]][G]:
                                 if c != best[x]:
-                                    if second[1] > lbG[x,G] - dc[sG[x,G], c]:
-                                        dist_x_c = dist(data[x], clasters[t,c])
+                                    if sc[x,c] != t:  #to avoid index error 
+                                        delta_c = dc[sc[x,c], c]
+                                    else:
+                                        delta_c = 0
+                                    if second[1] > lbc[x,c] - delta_c:
+                                        dist_x_c = dist(data[x], clasters[t][c])
+                                        lbc[x,c] = dist_x_c
+                                        sc[x,c] = t
                                         if second[1] > dist_x_c:
                                             if first[1] > dist_x_c:
-                                                second = first
+                                                if parents[first[0]] == G:
+                                                    second = first
                                                 first = (c, dist_x_c)
                                             second = (c, dist_x_c)
                             if first[0] != best[x]:
@@ -71,39 +81,28 @@ def my_k_means(data, k):
         
 
         #center update step
-        stop = True
-        new_claster_sizes = np.zeros(k, int)
-        for x in range(n):
-            if old_best[x] != best[x]:
-                stop = False
-            new_claster_sizes[best[x]] += 1
-        new_clasters = np.zeros((k,d))
-        for c in range(k):
-            if new_claster_sizes[c] > 0:
-                new_clasters[c] = clasters[t, c] * claster_sizes[c]
-            else:
-                new_clasters[c] = clasters[t, c]
-        for x in range(n):
-            if old_best[x] != best[x]:
-                new_clasters[best[x]] += data[x]
-                if new_claster_sizes[old_best[x]] > 0:
-                    new_clasters[old_best[x]] -= data[x]
-        for c in range(k):
-            if new_claster_sizes[c] > 0:
-                new_clasters[c] /= new_claster_sizes[c]
-
-        clasters = np.vstack([clasters, new_clasters[newaxis, ]])
+        new_clasters, claster_sizes = compute_new_clasters(data, 
+                                clasters[t] ,old_best, best, claster_sizes)
+        if np.all(best == old_best):
+            stop = True
         old_best = best.copy()
-        claster_sizes = new_claster_sizes
+        clasters.append(new_clasters)  
         
         t += 1 
-        dc = np.array([[dist(clasters[s,c], clasters[t,c]) 
+        dc = np.array([[dist(clasters[s][c], clasters[t][c]) 
                             for c in range(k)] for s in range(t)])
-        dG = np.transpose(np.array( [ dc[:,children[G]].max(axis = 1) 
+        dG = np.transpose(np.array( [ dc[:,children[0][G]].max(axis = 1) 
                                         for G in range(m) ] ))
+        if t > 1:
+            children.append(deepcopy(children[-1]))
+        for s in range(t):
+            for G in range(m):
+                children[s][G].sort(key = lambda c:dc[s,c], reverse = True)
         dmax = dG.max(axis = 1)
-
-    print(t)
+        
+    #print([len(G) for G in children[0]])
+    print("my_k_means: iter = %i, dist. calcs = %i, " % (t, dist.count), 
+          end = "")
     return (clasters[t], best)
 
 

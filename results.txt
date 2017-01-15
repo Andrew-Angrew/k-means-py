@@ -1,0 +1,24 @@
+
+n, k, d, seed = 16000, 256, 64, 42
+1 - random; 2 - true_d = 6, true_k = 200, noise 0.025; 3 - mnist + 0.025 noise.
+Тут правда my_k_means использует память по полной)
+
+classic   : iter = 29, dist. calcs = 118784000, time = 3558.272827.
+yinyang   : iter = 29, dist. calcs = 43987207, time = 1631.600079.
+my_k_means: iter = 29, dist. calcs = 22828904, time = 977.599269.
+0.0 16000
+0.0 16000
+0.0 16000
+classic   : iter = 14, dist. calcs = 57344000, time = 1717.995810.
+yinyang   : iter = 14, dist. calcs = 6522605, time = 251.864218.
+my_k_means: iter = 14, dist. calcs = 4766249, time = 210.032892.
+0.20563452066 15973
+0.268043215675 15965
+0.167408408718 15992
+classic   : iter = 48, dist. calcs = 196608000, time = 5871.283659.
+yinyang   : iter = 48, dist. calcs = 20652756, time = 804.662902.
+my_k_means: iter = 51, dist. calcs = 10054800, time = 500.093660.
+0.949648477262 15434
+0.980671529349 15326
+0.584212751554 15510
+

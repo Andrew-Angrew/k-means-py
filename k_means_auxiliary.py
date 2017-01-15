@@ -6,6 +6,7 @@ Created on Tue Jan  3 13:33:38 2017
 """
 
 import numpy as np
+from math import fsum
 from numpy.random import random, randn
 import csv
 from itertools import product
@@ -13,6 +14,7 @@ from itertools import product
 class infinite_number(object):
     
     def __init__(self):
+        self.forced_val = 100500.
         pass
     
     def __gt__(self, value):
@@ -26,6 +28,34 @@ class infinite_number(object):
         
     def __le__(self, value):
         return False
+        
+    def __float__(self):
+        return self.forced_val
+        
+Inf = infinite_number()
+
+def compute_new_clasters(data, clasters, old_best, best, claster_sizes):
+    n = len(best)
+    k,d = clasters.shape
+    new_clasters = np.zeros((k,d))
+    new_claster_sizes = np.zeros(k, int)
+    #print(best)
+    for x in range(n):
+        new_claster_sizes[best[x]] += 1
+    for c in range(k):
+        if new_claster_sizes[c] > 0:
+            new_clasters[c] = clasters[c] * claster_sizes[c]
+        else:
+            new_clasters[c] = clasters[c]
+    for x in range(n):
+        if best[x] != old_best[x]:
+            new_clasters[best[x]] += data[x]
+            if old_best[x] < k and new_claster_sizes[old_best[x]] > 0:
+                new_clasters[old_best[x]] -= data[x]
+    for c in range(k):
+        if new_claster_sizes[c] > 0:
+            new_clasters[c] /= new_claster_sizes[c]
+    return (new_clasters, new_claster_sizes)
 
 def generate_data(n, d, seed = 42, true_k = None, true_d = None, 
                   noise = 0, claster_sparsity = 1/10):
@@ -47,7 +77,8 @@ def generate_data(n, d, seed = 42, true_k = None, true_d = None,
         data = data.dot(embedding)
     return data + noise * randn(n,d)
     
-def load_mnist(n, d, noise = 0):
+def load_mnist(n, d, noise = 0, seed = 42):
+    np.random.seed(seed)
     assert d <= 784
     data = []
     with open("C:/Andrew/data/mnist/train.csv") as f:
@@ -71,6 +102,7 @@ def load_mnist(n, d, noise = 0):
     return data + noise * randn(*data.shape)
        
 def dist(x,y):
+    dist.count += 1
     return np.sqrt(np.sum((x-y)**2))
     
 def norm(x):
