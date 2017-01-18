@@ -8,18 +8,18 @@ Created on Tue Jan  3 13:40:13 2017
 import numpy as np
 from numpy import newaxis
 from copy import deepcopy
-from k_means_auxiliary import dist, Inf, compute_new_clasters
+from k_means_auxiliary import dist, Inf, compute_new_clusters
 from sub_func import make_groups
 
 def my_k_means(data, k):
     n, d = data.shape
     m = int(np.ceil(k/10))
-    clasters = [data[:k].copy()]
+    clusters = [data[:k].copy()]
     old_best = np.ones(n, int) * k  #nasty trick (see compute_new_clusters)
     best = np.zeros(n, int)
 #    parents = np.array([int(c/10) for c in range(k)])
 #    children = [[[10 * i + j for j in range(10)] for i in range(m)]]
-    children, parents = make_groups(clasters[0], m);
+    children, parents = make_groups(clusters[0], m);
     m = len(children)
     children = [children]
     ub = np.ones(n)
@@ -33,7 +33,7 @@ def my_k_means(data, k):
     sG = np.zeros((n,m), int)  #момент точности lbG(x,G)
     sc = np.zeros((n,k), int)  #момент точности lbc(x,c)
     sA = np.zeros(n, int)      #момент измерения lb
-    claster_sizes = np.zeros(k, int)
+    cluster_sizes = np.zeros(k, int)
     
     stop = False
     t = 0
@@ -43,13 +43,16 @@ def my_k_means(data, k):
         #assignment step
         for x in range(n):
             if ub[x] + dc[sb[x], best[x]] > lb[x] - dmax[sA[x]]:
-                ub[x] = dist(data[x], clasters[t][best[x]])
+                ub[x] = dist(data[x], clusters[t][best[x]])
                 lbc[x, best[x]] = ub[x]
                 sc[x, best[x]] = t
                 sb[x] = t
                 if ub[x] > lb[x] - dmax[sA[x]]:
+                    lb[x] = Inf
                     sA[x] = t
-                    for G in range(m):
+                    G_best = parents[best[x]]
+                    for i in range(m):
+                        G = (G_best + i) % m
                         if ub[x] > lbG[x,G] - dG[sG[x,G], G]:
                             #update lbG
                             first = (best[x], ub[x])
@@ -61,7 +64,7 @@ def my_k_means(data, k):
                                     else:
                                         delta_c = 0
                                     if second[1] > lbc[x,c] - delta_c:
-                                        dist_x_c = dist(data[x], clasters[t][c])
+                                        dist_x_c = dist(data[x], clusters[t][c])
                                         lbc[x,c] = dist_x_c
                                         sc[x,c] = t
                                         if second[1] > dist_x_c:
@@ -71,6 +74,8 @@ def my_k_means(data, k):
                                                 first = (c, dist_x_c)
                                             second = (c, dist_x_c)
                             if first[0] != best[x]:
+                                lbG[x,parents[best[x]]] = ub[x]
+                                sG[x,parents[best[x]]] = t
                                 best[x] = first[0]
                                 ub[x] = first[1]
                             lbG[x,G] = second[1]
@@ -81,28 +86,30 @@ def my_k_means(data, k):
         
 
         #center update step
-        new_clasters, claster_sizes = compute_new_clasters(data, 
-                                clasters[t] ,old_best, best, claster_sizes)
         if np.all(best == old_best):
             stop = True
-        old_best = best.copy()
-        clasters.append(new_clasters)  
-        
-        t += 1 
-        dc = np.array([[dist(clasters[s][c], clasters[t][c]) 
-                            for c in range(k)] for s in range(t)])
-        dG = np.transpose(np.array( [ dc[:,children[0][G]].max(axis = 1) 
-                                        for G in range(m) ] ))
-        if t > 1:
-            children.append(deepcopy(children[-1]))
-        for s in range(t):
-            for G in range(m):
-                children[s][G].sort(key = lambda c:dc[s,c], reverse = True)
-        dmax = dG.max(axis = 1)
+        else:
+            new_clusters, cluster_sizes = compute_new_clusters(data, 
+                                    clusters[t] ,old_best, best, cluster_sizes)
+    
+            old_best = best.copy()
+            clusters.append(new_clusters)  
+            
+            t += 1 
+            dc = np.array([[dist(clusters[s][c], clusters[t][c]) 
+                                for c in range(k)] for s in range(t)])
+            dG = np.transpose(np.array( [ dc[:,children[0][G]].max(axis = 1) 
+                                            for G in range(m) ] ))
+            if t > 1:
+                children.append(deepcopy(children[-1]))
+            for s in range(t):
+                for G in range(m):
+                    children[s][G].sort(key = lambda c:dc[s,c], reverse = True)
+            dmax = dG.max(axis = 1)
         
     #print([len(G) for G in children[0]])
     print("my_k_means: iter = %i, dist. calcs = %i, " % (t, dist.count), 
           end = "")
-    return (clasters[t], best)
+    return (clusters[t], best)
 
 

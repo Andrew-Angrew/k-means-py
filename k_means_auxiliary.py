@@ -34,43 +34,43 @@ class infinite_number(object):
         
 Inf = infinite_number()
 
-def compute_new_clasters(data, clasters, old_best, best, claster_sizes):
+def compute_new_clusters(data, clusters, old_best, best, cluster_sizes):
     n = len(best)
-    k,d = clasters.shape
-    new_clasters = np.zeros((k,d))
-    new_claster_sizes = np.zeros(k, int)
+    k,d = clusters.shape
+    new_clusters = np.zeros((k,d))
+    new_cluster_sizes = np.zeros(k, int)
     #print(best)
     for x in range(n):
-        new_claster_sizes[best[x]] += 1
+        new_cluster_sizes[best[x]] += 1
     for c in range(k):
-        if new_claster_sizes[c] > 0:
-            new_clasters[c] = clasters[c] * claster_sizes[c]
+        if new_cluster_sizes[c] > 0:
+            new_clusters[c] = clusters[c] * cluster_sizes[c]
         else:
-            new_clasters[c] = clasters[c]
+            new_clusters[c] = clusters[c]
     for x in range(n):
         if best[x] != old_best[x]:
-            new_clasters[best[x]] += data[x]
-            if old_best[x] < k and new_claster_sizes[old_best[x]] > 0:
-                new_clasters[old_best[x]] -= data[x]
+            new_clusters[best[x]] += data[x]
+            if old_best[x] < k and new_cluster_sizes[old_best[x]] > 0:
+                new_clusters[old_best[x]] -= data[x]
     for c in range(k):
-        if new_claster_sizes[c] > 0:
-            new_clasters[c] /= new_claster_sizes[c]
-    return (new_clasters, new_claster_sizes)
+        if new_cluster_sizes[c] > 0:
+            new_clusters[c] /= new_cluster_sizes[c]
+    return (new_clusters, new_cluster_sizes)
 
 def generate_data(n, d, seed = 42, true_k = None, true_d = None, 
-                  noise = 0, claster_sparsity = 1/10):
+                  noise = 0, cluster_sparsity = 1/10):
     np.random.seed(seed)
     if true_k == None:
         true_k = n
     if true_d == None:
         true_d = d
-    true_clasters = random((true_k, true_d))
+    true_clusters = random((true_k, true_d))
     if true_k == n:
-        data = true_clasters
+        data = true_clusters
     else:
         true_assignments = np.random.randint(true_k, size = n)
-        data = np.array([true_clasters[true_assignments[i]] + 
-                              randn(true_d)*claster_sparsity*np.sqrt(1/6)
+        data = np.array([true_clusters[true_assignments[i]] + 
+                              randn(true_d)*cluster_sparsity*np.sqrt(1/6)
                               for i in range(n)])
     if true_d < d:
         embedding = randn(true_d,d)

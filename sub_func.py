@@ -8,9 +8,9 @@ Created on Thu Jan 12 17:15:57 2017
 from classic import classic_k_means
 import numpy as np
 
-def make_groups(clasters, m, steps = 3):
-    k, d = clasters.shape
-    parents = classic_k_means(clasters, m, steps = steps)[1]
+def make_groups(clusters, m, steps = 3):
+    k, d = clusters.shape
+    parents = classic_k_means(clusters, m, steps = steps)[1]
     group_sizes = np.zeros(m)
     for G in parents:
         group_sizes[G] += 1
