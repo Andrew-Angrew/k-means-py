@@ -1,15 +1,16 @@
 ## Algorithms:
-my realizations in python 3.5:
+####my realizations in python 3.5:
 
-classic - classic k-means
+  classic - classic k-means
 
-yinyang - algorithm from the paper "Yinyang K-means: A Drop-in Replacement of the Classic K-means with Consistent Speedup", Yufei Ding et al., ICML, 2015.
+  yinyang - algorithm from the paper "Yinyang K-means: A Drop-in Replacement of the Classic K-means with Consistent Speedup", Yufei Ding et al., ICML, 2015.
 
-my_k_means - my improvement of yinyang
+  my_k_means - my improvement of yinyang
 
-turbo - variation of my_k_means, using O(nk) additional memory
+  turbo - variation of my_k_means, using O(nk) additional memory
 
-realizations from sklearn: standard, Elcan
+####realizations from sklearn: 
+standard, Elcan
 
 ##Data-sets
 
