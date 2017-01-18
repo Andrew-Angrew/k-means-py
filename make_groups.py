@@ -8,15 +8,15 @@ Created on Thu Jan 12 17:15:57 2017
 from classic import classic_k_means
 import numpy as np
 
-def make_groups(clasters, m, steps = 3):
-    k, d = clasters.shape
-    parents = classic_k_means(clasters, m, steps = steps)[1]
+def make_clustered_groups(clusters, m, steps=3):
+    k, d = clusters.shape
+    assert k >= m
+    parents = classic_k_means(clusters, m, empty_strat = 'farthest point',
+                              steps = steps).run()[1]
     group_sizes = np.zeros(m)
     for G in parents:
         group_sizes[G] += 1
     old_labels = group_sizes.argsort()[::-1]
-    if group_sizes[old_labels[0]] > 3 * k / m:
-        print("big groups!")
     new_m = m
     while group_sizes[old_labels[new_m-1]] == 0:
         new_m -= 1
@@ -27,4 +27,19 @@ def make_groups(clasters, m, steps = 3):
         children[G].append(c)  
     return (children, parents)
 
+def make_alphabet_groups(clusters, m):
+    k, d = clusters.shape
+    assert k >= m
+    min_size = k // m
+    big = k % m
+    c = 0
+    children = []
+    parents = []
+    for G in range(m):
+        size = min_size + int(G < big)
+        children.append(list(range(c,c + size)))
+        parents += [G] * size
+        c += size
+    return (children, parents)
+    
 

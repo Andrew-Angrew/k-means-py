@@ -7,33 +7,25 @@ Created on Tue Jan  3 13:44:21 2017
 
 import numpy as np
 from numpy import newaxis
-from k_means_auxiliary import dist, Inf, compute_new_clasters
+from dummy import dist, Inf, dummy
 
-def classic_k_means(data, k, steps = Inf, report = False):
-    n, d = data.shape
-    best = np.zeros(n, int)
-    old_best = np.ones(n, int) * k  #nasty trick (see compute_new_clusters)
-    clasters = data[:k].copy()
-    claster_sizes = np.zeros(k, int)
-    
-    stop = False
-    it_num = 0
-    dist.count = 0
-    while (not stop) and it_num < steps:
-        it_num += 1 
+class classic_k_means(dummy):
+    def __init__(self, data, k, empty_strat='spare', report=False, steps=Inf):
+        dummy.__init__(self, data, k, empty_strat, report, steps)
+        self.name = "classic   "
         
+    def step(self):        
         # assignment step
-        for x in range(n):
-            best[x] = np.argmin([dist(data[x], c) for c in clasters])
-                
+        for x in range(self.n):
+            self.ub[x] = Inf
+            for c in range(self.k):
+                dist_x_c = dist(self.data[x], self.clusters[c])
+                if self.ub[x] > dist_x_c:
+                    self.ub[x], self.best[x] = dist_x_c, c
         #center update step
-        clasters, claster_sizes = \
-            compute_new_clasters(data, clasters ,old_best, best, claster_sizes)
-        if np.all(best == old_best):
-            stop = True
-        best, old_best = old_best, best
-    
-    if report:
-        print("classic   : iter = %i, dist. calcs = %i, " 
-              % (it_num, dist.count), end = "")
-    return (clasters, best)
+        if np.all(self.best == self.old_best):
+            self.stop = True
+        else:
+            self.clusters, self.cluster_sizes = self.compute_new_clusters()
+            self.old_best = self.best.copy()
+            self.t += 1 
