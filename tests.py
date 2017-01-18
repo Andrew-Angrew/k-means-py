@@ -13,6 +13,8 @@ from classic import classic_k_means
 from yinyang import yinyang_k_means
 from my_k_means import my_k_means
 from my_k_means_turbo import turbo
+from sklearn.cluster import KMeans
+from time import clock
 
 def generate_data(n, d, seed=42, true_k=None, true_d=None, 
                   noise=0, cluster_sparsity=1/10):
@@ -53,35 +55,73 @@ def load_mnist(n, d, noise=0, seed=42):
     data = data[:,indices]
     return data + noise * randn(*data.shape)
 
+#n, k, d, seed = 1000, 32, 32, 42
+#data1 = generate_data(n, d, seed = seed)
+#data2 = generate_data(n, d, true_d = 6, true_k = 200, noise = 0.025, seed = seed)
+#data3 = load_mnist(n, d, noise = 0.025, seed = seed)
+#for data in [data1, data2, data3]:
+#
+#    alg = classic_k_means(data, k, report = True, 
+#                          empty_strat = 'spare')
+#    ans_c = alg.run()
+#
+#    ans_y = yinyang_k_means(data, k)
+#        
+#    alg = my_k_means(data, k, report = True, groups_strat = 'clustered', 
+#                     empty_strat = 'spare')
+#    ans_m = alg.run()
+#    
+#    alg = turbo(data, k, report = True, groups_strat = 'clustered', 
+#                     empty_strat = 'spare')
+#    ans_t = alg.run()
+#    
+#    start = clock()
+#    standard = KMeans(n_clusters = k, init = data[:k].copy(), 
+#                      algorithm = 'full', n_init = 1, 
+#                      precompute_distances = False).fit(data)
+#    print("standard  : time = {:.3}".format(clock() - start))
+#    
+#    start = clock()
+#    Elkan = KMeans(n_clusters = k, init = data[:k].copy(), 
+#                   algorithm = 'elkan', n_init = 1, 
+#                   precompute_distances = False).fit(data) 
+#    print("elkan     : time = {:.3}".format(clock() - start))
+#    
+#    print(max([dist(ans_c[0][i],ans_y[0][i]) for i in range(k)]), 
+#           sum(ans_c[1] == ans_y[1]))
+#    
+#    print(max([dist(ans_c[0][i],ans_m[0][i]) for i in range(k)]), 
+#           sum(ans_c[1] == ans_m[1]))
+#    
+#    print(max([dist(ans_c[0][i],ans_t[0][i]) for i in range(k)]), 
+#           sum(ans_c[1] == ans_t[1]))
+#
+#    print(max([dist(ans_c[0][i],standard.cluster_centers_[i]) for i in range(k)]), 
+#           sum(ans_c[1] == standard.labels_))
+#    
+#    print(max([dist(ans_c[0][i],Elkan.cluster_centers_[i]) for i in range(k)]), 
+#           sum(ans_c[1] == Elkan.labels_))
+    
+    
 n, k, d, seed = 16000, 256, 64, 42
 data1 = generate_data(n, d, seed = seed)
 data2 = generate_data(n, d, true_d = 6, true_k = 200, noise = 0.025, seed = seed)
 data3 = load_mnist(n, d, noise = 0.025, seed = seed)
-for data in [data1, data2, data3]:
-
-    alg = classic_k_means(data, k, report = True, 
-                          empty_strat = 'spare')
-    ans_c = alg.run()
-
-    ans_y = yinyang_k_means(data, k)
-        
-    alg = my_k_means(data, k, report = True, groups_strat = 'clustered', 
-                     empty_strat = 'spare')
-    ans_m = alg.run()
+for data in [data1, data2, data3]:    
+    start = clock()
+    standard = KMeans(n_clusters = k, init = data[:k].copy(), 
+                      algorithm = 'full', n_init = 1, 
+                      precompute_distances = False).fit(data)
+    std_t = clock() - start
+    print("standard: time = {:.3}".format(clock() - start))
     
-    alg = turbo(data, k, report = True, groups_strat = 'clustered', 
-                     empty_strat = 'spare')
-    ans_t = alg.run()
-     
-    print(max([dist(ans_c[0][i],ans_y[0][i]) for i in range(k)]), 
-           sum(ans_c[1] == ans_y[1]))
-    
-    print(max([dist(ans_c[0][i],ans_m[0][i]) for i in range(k)]), 
-           sum(ans_c[1] == ans_m[1]))
-    
-    print(max([dist(ans_c[0][i],ans_t[0][i]) for i in range(k)]), 
-           sum(ans_c[1] == ans_t[1]))
-
+    start = clock()
+    Elkan = KMeans(n_clusters = k, init = data[:k].copy(), 
+                   algorithm = 'elkan', n_init = 1, 
+                   precompute_distances = False).fit(data) 
+    elkan_t = clock() - start
+    print("Elkan   : time = {:.3}".format(clock() - start))
+    print("speedup = {:.3}".format(std_t/elkan_t))    
 
    
 ''' 

@@ -118,8 +118,7 @@ def yinyang_k_means(data, k):
                 lb[x] -= delta     
     
     
-    print("yinyang   : iter = %i, dist. calcs = %i, time = %f.3" % 
-              (it_num, dist.count, clock() - start))
+    print("yinyang   : iter = {}, dist. calcs = {}, time = {:.3}".format(it_num, dist.count, clock() - start))
     return (clusters, best)
 
 

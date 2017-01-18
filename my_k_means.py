@@ -128,8 +128,7 @@ class my_k_means(dummy):
         while not self.stop:
             self.step()
         if self.report:
-            print(self.name + ": iter = %i, dist. calcs = %i, time = %f.3" % 
-              (self.t, dist.count, clock() - start))
+            print(self.name + ": iter = {}, dist. calcs = {}, time = {:.3}".format(self.t, dist.count, clock() - start))
         return (self.clusters[self.t], self.best)
 
 
