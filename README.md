@@ -25,12 +25,12 @@ n, k, d, seed = 16000, 256, 64, 42
 ####data1
 algorithm | iter | distance calcultions | time (s) | speedup over classic
 ------------ | ------------- | ---------- | ------------- | ------------- |
-classic   | iter = 28 | 118784000 | 4679.550236 |
-yinyang   | iter = 28 | 43944931 | 1832.094502 | 2.554
-my_k_means| iter = 28 | 31669670 | 1227.240892 | 3.813
-turbo     | iter = 28 | 22810904 | 971.634182 | 4.816
+classic   | 28 | 118784000 | 4679.550236 |
+yinyang   | 28 | 43944931 | 1832.094502 | 2.554
+my_k_means| 28 | 31669670 | 1227.240892 | 3.813
+turbo     | 28 | 22810904 | 971.634182 | 4.816
 standard  |           |          | 15.5
-Elkan     |                      | 6.23        | 2.48
+Elkan     |           |          | 6.23        | 2.48
 
 algorithm | iter | distance calcultions | time (s) | speedup over classic
 ------------ | ------------- | ---------- | ------------- | ------------- |
@@ -39,7 +39,7 @@ yinyang   | 13 |  6218541 | 251.735244 | 7.029
 my_k_means| 13 |  5228257 | 219.911093 | 8.047
 turbo     | 13 | 4647194 | 206.548091 | 8.567
 standard  |           |          | 7.28 |
-Elkan     |                      |  2.26 | 3.23
+Elkan     |           |          |  2.26 | 3.23
 
 algorithm | iter | distance calcultions | time (s) | speedup over classic
 ------------ | ------------- | ---------- | ------------- | ------------- |
@@ -48,4 +48,4 @@ yinyang   | 47 | 19867172 | 835.799325 | 7.255
 my_k_means| 47 | 13495695 | 625.046024 | 9.702
 turbo     | 47 | 9869174 | 519.508485 | 11.673
 standard  |           |          | 24.3 |
-Elkan     |                      | 8.31 |speedup = 2.92
+Elkan     |           |          | 8.31 |speedup = 2.92
