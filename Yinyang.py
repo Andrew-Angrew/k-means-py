@@ -50,8 +50,6 @@ def yinyang_k_means(data, k):
 
     stop = False
     it_num = 0
-    dist.count = 0
-    start = clock()
     while not stop:        
         #assignment step
         for x in range(n):
@@ -118,7 +116,6 @@ def yinyang_k_means(data, k):
                 lb[x] -= delta     
     
     
-    print("yinyang   : iter = {}, dist. calcs = {}, time = {:.3}".format(it_num, dist.count, clock() - start))
     return (clusters, best)
 
 

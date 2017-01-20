@@ -11,8 +11,10 @@ import numpy as np
 def make_clustered_groups(clusters, m, steps=3):
     k, d = clusters.shape
     assert k >= m
-    parents = classic_k_means(clusters, m, empty_strat = 'farthest point',
-                              steps = steps).run()[1]
+    cl = classic_k_means(clusters, m, empty_strat = 'farthest point',
+                              steps = steps)
+    cl.fit()
+    parents = cl.best
     group_sizes = np.zeros(m)
     for G in parents:
         group_sizes[G] += 1

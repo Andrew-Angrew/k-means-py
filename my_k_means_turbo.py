@@ -122,13 +122,5 @@ class turbo(dummy):
         sG[x,G] = t
         lb[x] = min(lb[x], second[1])
         
-    def run(self):
-        dist.count = 0
-        start = clock()
-        while not self.stop:
-            self.step()
-        if self.report:
-            print(self.name + ": iter = {}, dist. calcs = {}, time = {:.3}".format(self.t, dist.count, clock() - start))
-        return (self.clusters[self.t], self.best)
 
 

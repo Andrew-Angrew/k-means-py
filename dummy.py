@@ -92,17 +92,15 @@ class dummy:
 
         return (new_clusters, new_cluster_sizes)
         
-    def run(self):
-        dist.count = 0
+    def fit(self):
         start = clock()
         while self.steps > self.t and not self.stop:
             self.step()
         if self.report:
-            print(self.name + ": iter = {}, dist. calcs = {}, time = {:.3}".format(self.t, dist.count, clock() - start))
-        return (self.clusters, self.best)
+            print(self.name + ": iter = {}, time = {:.3}".format(
+                  self.t, clock() - start))
        
 def dist(x,y):
-    dist.count += 1
     return np.sqrt(np.sum((x-y)**2))
     
 def norm(x):
