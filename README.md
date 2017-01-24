@@ -22,6 +22,8 @@ n, k, d, seed = 16000, 256, 64, 42
 
 3 mnist data-set with dropped coordinates of lesser variation with 0.025*normal noise.
 
+4 kegg-net n = 65554, d = 28 (normed + 0.001 noise)
+
 ##Results
 ###data1
 algorithm | iter | distance calcultions | time (s) | speedup over classic
@@ -52,3 +54,11 @@ my_k_means| 47 | 13495695 | 625.046024 | 9.702
 turbo     | 47 | 9869174 | 519.508485 | 11.673
 standard  |           |          | 24.3 |
 Elkan     |           |          | 8.31 | 2.92
+
+###data4 (kegg-net)
+k | iter | classic time | Yinyang speedup | my sp-up | turbo sp-up | sklearn classic time | Elkan sp-up
+------------ | ------------- | ---------- | ------------- | ------------- |------------- |------------- |------------- |
+4 | 41 | 326.0 | 4.157 | 4.628 | 4.837 | 1.006 | 1.117
+16| 83 | 2640 | 4.192 | 4.827 | 6.89 | 6.999 | 1.724
+64| 73 | 12450 | 7.147 | 8.255 | 13.53 | 18.39 | 1.279
+256 | 83 | 41740 | 12.82 | 16.32 | 18.88 | 142.0 | 1.606
