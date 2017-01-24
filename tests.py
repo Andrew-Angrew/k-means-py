@@ -61,75 +61,81 @@ def make_num(w):
     except:
         return 0.
 
-def load_kegg_net():
+def load_kegg_net(noise=0.001,seed=42):
+    np.random.seed(seed)
     data = []
     with open("C:/Andrew/data/Reaction Network (Undirected).data") as f:
         csv_f = csv.reader(f)
         data = np.array([[make_num(w) for w in row[1:]] for row in csv_f])
-    return data
+    data -= np.mean(data, axis = 0)
+    data /= np.std(data, axis = 0)
+    return data + noise * randn(*data.shape)
     
     
-#n, k, d, seed = 1000, 32, 32, 42
+n, k, d, seed = 1000, 32, 32, 42
 #data1 = generate_data(n, d, seed = seed)
 #data2 = generate_data(n, d, true_d = 6, true_k = 200, noise = 0.025, seed = seed)
 #data3 = load_mnist(n, d, noise = 0.025, seed = seed)
-#data4 = load_kegg_net()[:2000]
-for k in [4,16,64,256]:
+data4 = load_kegg_net(seed = seed)[:n]
+
+print("n,d = ", data4.shape)
+for k in [4]:
     
     print("k = {}:".format(k))
-    start = clock()
-    standard = KMeans(n_clusters = k, init = data4[:k].copy(), 
-                      algorithm = 'full', n_init = 1, 
-                      precompute_distances = False).fit(data4)
-    std_t = clock() - start
-    print("standard    |  | {:.3} |".format(std_t))
-    
-    start = clock()
-    Elkan = KMeans(n_clusters = k, init = data4[:k].copy(), 
-                   algorithm = 'elkan', n_init = 1, 
-                   precompute_distances = False).fit(data4) 
-    Elkan_t = clock() - start
-    print("elkan       |  | {:.3} | {:.3}".format(Elkan_t, std_t/Elkan_t))
     
     start = clock()
     clas = classic_k_means(data4, k, empty_strat = 'spare')
     clas.fit()
     clas_t = clock() - start
-    print(clas.name + "  | {} | {:.3} | ".format(clas.t, clas_t))
+    print("iter = ", clas.t, "{:.4}".format(clas_t), end = " | ")
 
     start = clock()
     yin = yinyang_k_means(data4, k)
     yin_t = clock() - start
-    print("yinyang     |  | {:.3} | {:.3} ".format(yin_t, clas_t/yin_t))
+    print("{:.4}".format(clas_t/yin_t), end = " | ")
         
     start = clock()
     my = my_k_means(data4, k, groups_strat = 'clustered', 
                      empty_strat = 'spare')
     my.fit()
     my_t = clock() - start
-    print("my_k_means  | {} | {:.3} | {:.3} ".format(my.t, my_t, clas_t/my_t))
+    print("{:.4}".format(clas_t/my_t), end = " | " )
     
     start = clock()
     tur = turbo(data4, k, groups_strat = 'clustered', 
                      empty_strat = 'spare')
     tur.fit()
     tur_t = clock() - start
-    print("turbo       | {} | {:.3} | {:.3} ".format(tur.t, tur_t, clas_t/tur_t))
+    print("{:.4}".format(clas_t/tur_t), end = " | ")
+
+    start = clock()
+    standard = KMeans(n_clusters = k, init = data4[:k].copy(), 
+                      algorithm = 'full', n_init = 1, 
+                      precompute_distances = False).fit(data4)
+    std_t = clock() - start
+    print("{:.4}".format(std_t), end = " | ")
     
-#    print(max([dist(ans_c[0][i],ans_y[0][i]) for i in range(k)]), 
-#           sum(ans_c[1] == ans_y[1]))
-#    
-#    print(max([dist(ans_c[0][i],ans_m[0][i]) for i in range(k)]), 
-#           sum(ans_c[1] == ans_m[1]))
-#    
-#    print(max([dist(ans_c[0][i],ans_t[0][i]) for i in range(k)]), 
-#           sum(ans_c[1] == ans_t[1]))
-#
-#    print(max([dist(ans_c[0][i],standard.cluster_centers_[i]) for i in range(k)]), 
-#           sum(ans_c[1] == standard.labels_))
-#    
-#    print(max([dist(ans_c[0][i],Elkan.cluster_centers_[i]) for i in range(k)]), 
-#           sum(ans_c[1] == Elkan.labels_))
+    start = clock()
+    Elkan = KMeans(n_clusters = k, init = data4[:k].copy(), 
+                   algorithm = 'elkan', n_init = 1, 
+                   precompute_distances = False).fit(data4) 
+    Elkan_t = clock() - start
+    print("{:.4}".format(std_t/Elkan_t))
+    
+    print(max([dist(clas.clusters[i],yin[0][i]) for i in range(k)]), 
+           sum(clas.best == yin[1]))
+    
+    print(max([dist(clas.clusters[i],my.clusters[-1][i]) for i in range(k)]), 
+           sum(clas.best == my.best))
+    
+    print(max([dist(clas.clusters[i],tur.clusters[-1][i]) for i in range(k)]), 
+           sum(clas.best == tur.best))
+
+    print(max([dist(clas.clusters[i],standard.cluster_centers_[i]) for i in range(k)]), 
+           sum(clas.best == standard.labels_))
+    
+    print(max([dist(clas.clusters[i],Elkan.cluster_centers_[i]) for i in range(k)]), 
+           sum(clas.best == Elkan.labels_))
     
     
 #n, k, d, seed = 16000, 256, 64, 42
