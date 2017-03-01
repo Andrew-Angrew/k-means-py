@@ -13,10 +13,9 @@ from make_groups import*
 from time import clock
 
 class turbo(dummy):
-    def __init__(self, data, k, empty_strat='spare', report=False, 
-                 groups_strat='alphabet'):
-        self.name = "turbo     "            
-        dummy.__init__(self, data, k, empty_strat, report)
+    def __init__(self, data, k, empty_strat='spare', groups_strat='alphabet'):
+        self.name = "turbo"            
+        dummy.__init__(self, data, k, empty_strat)
         self.clusters = [self.clusters]
         self.m = (k - 1)//10 + 1
         if groups_strat == 'alphabet':
@@ -36,8 +35,9 @@ class turbo(dummy):
         self.sG = np.zeros((self.n,self.m), int)  #момент точности lbG(x,G)
         self.sc = np.zeros((self.n,k), int)  #момент точности lbc(x,c)
         self.sA = np.zeros(self.n, int)      #момент измерения lb
+        self.sb = np.zeros(self.n, int)
         
-    def step(self):        
+    def reassign_points(self):        
         #i'm sorry, but i need do so)
         (m, sb, children, best, k, ub, lbG, dmax, lbc, sc, 
         dc, t, sG, dG, sA, lb, clusters, n, parents, data) = (
@@ -67,29 +67,32 @@ class turbo(dummy):
                             lb[x] = min(lb[x], lbG[x,G] - dG[sG[x,G], G])
                 
         #center update step
-        if np.all(best == self.old_best):
-            self.stop = True
-        else:
-            t += 1
-            self.t = t
-            new_clusters, self.cluster_sizes = \
-                self.compute_new_clusters(curr_clusters = clusters[t-1])            
-            self.old_best = best.copy()
-            clusters.append(new_clusters)  
-            
-            del dc, dG  #is it really spares something?
-            self.dc = np.array([[dist(clusters[s][c], clusters[t][c]) 
-                                for c in range(k)] for s in range(t)])
-            self.dc = np.vstack((self.dc, np.zeros(k)))
-            self.dG = np.transpose(np.array(
-                [self.dc[:, children[0][G]].max(axis = 1) for G in range(m)]))
-            if t > 1:
-                children.append(deepcopy(children[-1]))
-            for s in range(t):
-                for G in range(m):
-                    children[s][G].sort(key = lambda c:self.dc[s,c],
-                                        reverse = True)
-            self.dmax = self.dG.max(axis = 1)
+    def update_centers(self):
+        (m, sb, children, best, k, ub, lbG, dmax, lbc, sc, 
+        dc, t, sG, dG, sA, lb, clusters, n, parents, data) = (
+        self.m, self.sb, self.children, self.best, 
+        self.k, self.ub, self.lbG, self.dmax, self.lbc, self.sc, 
+        self.dc, self.t, self.sG, self.dG, 
+        self.sA, self.lb, self.clusters, self.n, self.parents, self.data)
+
+        new_clusters, self.cluster_sizes = \
+            self.compute_new_clusters(curr_clusters = clusters[t-1])            
+        self.old_best = best.copy()
+        clusters.append(new_clusters)  
+        
+        del dc, dG  #is it really spares something?
+        self.dc = np.array([[dist(clusters[s][c], clusters[t][c]) 
+                            for c in range(k)] for s in range(t)])
+        self.dc = np.vstack((self.dc, np.zeros(k)))
+        self.dG = np.transpose(np.array(
+            [self.dc[:, children[0][G]].max(axis = 1) for G in range(m)]))
+        if t > 1:
+            children.append(deepcopy(children[-1]))
+        for s in range(t):
+            for G in range(m):
+                children[s][G].sort(key = lambda c:self.dc[s,c],
+                                    reverse = True)
+        self.dmax = self.dG.max(axis = 1)
             
     def update_lbG(self, x,G):
         (children, best, ub, lbG, sc, lbc, 

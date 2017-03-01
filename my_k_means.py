@@ -13,10 +13,9 @@ from make_groups import*
 from time import clock
 
 class my_k_means(dummy):
-    def __init__(self, data, k, empty_strat='spare', report=False, 
-                 groups_strat='alphabet'):
+    def __init__(self, data, k, empty_strat='spare', groups_strat='alphabet'):
         self.name = "my_k_means"            
-        dummy.__init__(self, data, k, empty_strat, report)
+        dummy.__init__(self, data, k, empty_strat)
         self.clusters = [self.clusters]
         self.m = (k - 1)//10 + 1
         if groups_strat == 'alphabet':
@@ -36,62 +35,9 @@ class my_k_means(dummy):
         self.sG = np.zeros((self.n,self.m), int)  #момент точности lbG(x,G)
         #self.sc = np.zeros((self.n,k), int)  #момент точности lbc(x,c)
         self.sA = np.zeros(self.n, int)      #момент измерения lb
+        self.sb = np.zeros(self.n, int)
         
-    def step(self):        
-        #i'm sorry, but i need do so)
-        (m, sb, children, best, k, ub, lbG, dmax, #lbc, sc, 
-        dc, t, sG, dG, sA, lb, clusters, n, parents, data) = (
-        self.m, self.sb, self.children, self.best, 
-        self.k, self.ub, self.lbG, self.dmax, #self.lbc, self.sc, 
-        self.dc, self.t, self.sG, self.dG, 
-        self.sA, self.lb, self.clusters, self.n, self.parents, self.data)
-        
-        #assignment step
-        for x in range(n):
-            if ub[x] + dc[sb[x], best[x]] > lb[x] - dmax[sA[x]]:
-                ub[x] = dist(data[x], clusters[t][best[x]])
-                #lbc[x, best[x]] = ub[x]
-                #sc[x, best[x]] = t
-                sb[x] = t
-                if ub[x] > lb[x] - dmax[sA[x]]:
-                    lb[x] = Inf
-                    sA[x] = t
-                    best_G = parents[best[x]]
-                    for i in range(m):
-                        #begin with best_G to update lbG[x,best_G] properly
-                        #if x will change best[x]
-                        G = (best_G + i) % m  
-                        if ub[x] > lbG[x,G] - dG[sG[x,G], G]:
-                            self.update_lbG(x,G)                            
-                        else:
-                            lb[x] = min(lb[x], lbG[x,G] - dG[sG[x,G], G])
-                
-        #center update step
-        if np.all(best == self.old_best):
-            self.stop = True
-        else:
-            t += 1
-            self.t = t
-            new_clusters, self.cluster_sizes = \
-                self.compute_new_clusters(curr_clusters = clusters[t-1])            
-            self.old_best = best.copy()
-            clusters.append(new_clusters)  
-            
-            del dc, dG  #is it really spares something?
-            self.dc = np.array([[dist(clusters[s][c], clusters[t][c]) 
-                                for c in range(k)] for s in range(t)])
-            self.dc = np.vstack((self.dc, np.zeros(k)))
-            self.dG = np.transpose(np.array(
-                [self.dc[:, children[0][G]].max(axis = 1) for G in range(m)]))
-            if t > 1:
-                children.append(deepcopy(children[-1]))
-            for s in range(t):
-                for G in range(m):
-                    children[s][G].sort(key = lambda c:self.dc[s,c],
-                                        reverse = True)
-            self.dmax = self.dG.max(axis = 1)
-            
-    def update_lbG(self, x,G):
+    def update_lbG(self, x, G):
         (children, best, ub, lbG, #sc, lbc, 
         dc, t, sG, lb, clusters, parents, data) = (
         self.children, self.best, 
@@ -113,6 +59,8 @@ class my_k_means(dummy):
                                 second = first
                             first = (c, dist_x_c)
                         second = (c, dist_x_c)
+                else:
+                    break
         if first[0] != best[x]:
             lbG[x, parents[best[x]]] = ub[x]
             sG[x, parents[best[x]]] = t
@@ -121,6 +69,62 @@ class my_k_means(dummy):
         lbG[x,G] = second[1]
         sG[x,G] = t
         lb[x] = min(lb[x], second[1])
+                          
+    def reassign_points(self):
+        (m, sb, children, best, k, ub, lbG, dmax, #lbc, sc, 
+        dc, t, sG, dG, sA, lb, clusters, n, parents, data) = (
+        self.m, self.sb, self.children, self.best, 
+        self.k, self.ub, self.lbG, self.dmax, #self.lbc, self.sc, 
+        self.dc, self.t, self.sG, self.dG, 
+        self.sA, self.lb, self.clusters, self.n, self.parents, self.data)
+        
+        for x in range(n):
+            if ub[x] + dc[sb[x], best[x]] > lb[x] - dmax[sA[x]]:
+                ub[x] = dist(data[x], clusters[t][best[x]])
+                #lbc[x, best[x]] = ub[x]
+                #sc[x, best[x]] = t
+                sb[x] = t
+                if ub[x] > lb[x] - dmax[sA[x]]:
+                    lb[x] = Inf
+                    sA[x] = t
+                    best_G = parents[best[x]]
+                    for i in range(m):
+                        #begin with best_G to update lbG[x,best_G] properly
+                        #if x will change best[x]
+                        G = (best_G + i) % m  
+                        if ub[x] > lbG[x,G] - dG[sG[x,G], G]:
+                            self.update_lbG(x,G)                            
+                        else:
+                            lb[x] = min(lb[x], lbG[x,G] - dG[sG[x,G], G])
+        
+    def update_centers(self):
+        (m, sb, children, best, k, ub, lbG, dmax, #lbc, sc, 
+        dc, t, sG, dG, sA, lb, clusters, n, parents, data) = (
+        self.m, self.sb, self.children, self.best, 
+        self.k, self.ub, self.lbG, self.dmax, #self.lbc, self.sc, 
+        self.dc, self.t, self.sG, self.dG, 
+        self.sA, self.lb, self.clusters, self.n, self.parents, self.data)
+        
+        new_clusters, self.cluster_sizes = \
+            self.compute_new_clusters(curr_clusters = clusters[t-1])            
+        self.old_best = best.copy()
+        clusters.append(new_clusters)  
+        
+        del dc, dG  #is it really spares something?
+        self.dc = np.array([[dist(clusters[s][c], clusters[t][c]) 
+                            for c in range(k)] for s in range(t)])
+        self.dc = np.vstack((self.dc, np.zeros(k)))
+        self.dG = np.transpose(np.array(
+            [self.dc[:, children[0][G]].max(axis = 1) for G in range(m)]))
+        if t > 1:
+            children.append(deepcopy(children[-1]))
+        for s in range(t):
+            for G in range(m):
+                children[s][G].sort(key = lambda c:self.dc[s,c],
+                                    reverse = True)
+        self.dmax = self.dG.max(axis = 1)
+
+
         
 
 

@@ -7,24 +7,17 @@ Created on Tue Jan  3 13:33:38 2017
 
 import numpy as np
 from time import clock
+from functools import total_ordering
 
-    
-class infinite_number(object):
-    
+@total_ordering
+class infinite_number():
+
     def __init__(self):
         self.forced_val = 100500.
-        pass
-    
-    def __gt__(self, value):
-        return True
-        
-    def __ge__(self, value):
-        return True
-        
+
     def __lt__(self, value):
-        return False
-        
-    def __le__(self, value):
+        if value > self.forced_val:
+            self.forced_val = 2 * value + 1
         return False
         
     def __float__(self):
@@ -33,10 +26,9 @@ class infinite_number(object):
 Inf = infinite_number()
 
 class dummy:
-    def __init__(self, data, k, empty_strat='spare', report=False, steps=Inf):
+    def __init__(self, data, k, empty_strat='spare', steps=Inf):
         assert empty_strat in ['spare', 'farthest point']
         self.empty_strat = empty_strat
-        self.report = report
         self.steps = steps
         self.data, self.k = data, k
         self.n, self.d = data.shape
@@ -47,36 +39,44 @@ class dummy:
         self.best = np.zeros(self.n, int)
         self.cluster_sizes = np.zeros(k, int)
         self.ub = np.ones(self.n)
-        self.sb = np.zeros(self.n, int)  
         self.stop = False
         self.t = 0
+        self.dist_calcs = []
+        self.assign_times = []
+        self.migrations = []
         
     def compute_new_clusters(self, curr_clusters=None):
         if curr_clusters is None:
             curr_clusters = self.clusters
-        (n, k, d, ub, best, old_best, sb) = (self.n, self.k, self.d, 
-        self.ub, self.best, self.old_best, self.sb)
+        (n, k, d, ub, best, old_best) = (self.n, self.k, self.d, 
+        self.ub, self.best, self.old_best)
+        sb = self.sb if ('sb' in self.__dict__) else None     
         new_clusters = np.zeros((k,d))
         new_cluster_sizes = np.zeros(k, int)
         for x in range(n):
             new_cluster_sizes[best[x]] += 1
+        
+        #reassign farthest points to empty clusters
         if self.empty_strat == 'farthest point':
             if np.min(new_cluster_sizes) == 0:
                 for x in range(n):
                     if ub[self.farthest_points[best[x]]] < ub[x]:
                         self.farthest_points[best[x]] = x
                 clusters_by_size = new_cluster_sizes.argsort()
-                l,r = 0, k-1
-                while (new_cluster_sizes[clusters_by_size[r]] == 0 and 
-                       new_cluster_sizes[clusters_by_size[l]] > 1 and l < r):
-                    best[self.farthest_points[clusters_by_size[l]]] = \
-                        clusters_by_size[r]
-                    new_cluster_sizes[clusters_by_size[l]] -= 1
-                    new_cluster_sizes[clusters_by_size[r]] = 1
-                    ub[self.farthest_points[clusters_by_size[l]]] = 0
-                    sb[self.farthest_points[clusters_by_size[l]]] = self.t
-                    l += 1
-                    r -= 1                
+                for rank in range(n // 2):
+                    donor = clusters_by_size[rank]
+                    recepient = clusters_by_size[-rank]
+                    if (new_cluster_sizes[recepient] > 0 or 
+                        new_cluster_sizes[donor] <= 1):
+                        break
+                    point = self.farthest_points[donor]
+                    best[point] = recepient
+                    new_cluster_sizes[donor] -= 1
+                    new_cluster_sizes[recepient] = 1
+                    ub[point] = 0
+                    if sb:
+                        sb[point] = self.t    
+                          
         for x in range(n):
             if best[x] != old_best[x]:
                 new_clusters[best[x]] += self.data[x]
@@ -91,18 +91,36 @@ class dummy:
                 new_clusters[c] = curr_clusters[c]
 
         return (new_clusters, new_cluster_sizes)
+    
+    def step(self):
+        dist.count = 0
+        start = clock()
+        self.reassign_points()
+        self.assign_times.append(clock() - start)
+        self.dist_calcs.append(dist.count)
+        self.migrations.append(sum(self.best != self.old_best))
+        self.t += 1 
+        if self.migrations[-1] == 0:
+            self.stop = True
+        else:
+            self.update_centers()
         
     def fit(self):
-        start = clock()
         while self.steps > self.t and not self.stop:
             self.step()
-        if self.report:
-            print(self.name + ": iter = {}, time = {:.3}".format(
-                  self.t, clock() - start))
-       
+
+
+def call_count_decorator(f):
+    def wrapper(*args, **kwargs):
+        wrapper.count += 1
+        return f(*args, **kwargs)
+    wrapper.count = 0
+    return wrapper
+
+@call_count_decorator
 def dist(x,y):
     return np.sqrt(np.sum((x-y)**2))
-    
+
 def norm(x):
     return np.sqrt(np.sum(x**2))
     
